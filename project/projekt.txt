@@ -1,0 +1,163 @@
+SELECT *
+FROM survey
+LIMIT 10;
+
+
+SELECT question, COUNT(DISTINCT user_id) as quantity
+FROM
+survey
+GROUP BY question;
+
+SELECT *
+FROM quiz
+LIMIT 5;
+SELECT *
+FROM home_try_on
+LIMIT 5;
+SELECT *
+FROM purchase
+LIMIT 5;
+
+WITH try AS
+(SELECT quiz.user_id, home_try_on.number_of_pairs,
+CASE
+WHEN home_try_on.number_of_pairs IS null THEN 'False'
+ELSE 'True'
+END as is_home_try_on
+FROM quiz left join home_try_on
+ON quiz.user_id = home_try_on.user_id
+)
+SELECT try.user_id as user_id, try.is_home_try_on as is_home_try_on
+, try.number_of_pairs as number_of_pairs,
+
+CASE
+WHEN purchase.product_id IS null THEN 'False'
+ELSE 'True'
+END as is_purchase
+
+FROM try LEFT JOIN purchase
+ON try.user_id = purchase.user_id
+LIMIT 10
+;
+
+--inaczej ponizej
+SELECT DISTINCT q.user_id,
+   h.user_id IS NOT NULL AS 'is_home_try_on',
+   h.number_of_pairs,
+   p.user_id IS NOT NULL AS 'is_purchase'
+FROM quiz q
+LEFT JOIN home_try_on h
+   ON q.user_id = h.user_id
+LEFT JOIN purchase p
+   ON p.user_id = q.user_id
+LIMIT 10;
+
+--zlicza kolejne etapy bez podziau na 3 lub 5 par
+WITH baza AS
+(SELECT DISTINCT q.user_id,
+   h.user_id IS NOT NULL AS 'is_home_try_on',
+   h.number_of_pairs,
+   p.user_id IS NOT NULL AS 'is_purchase'
+FROM quiz q
+LEFT JOIN home_try_on h
+   ON q.user_id = h.user_id
+LEFT JOIN purchase p
+   ON p.user_id = q.user_id)
+   
+SELECT count(distinct baza.user_id) as all_id, sum(is_home_try_on) as all_home_try_on, sum(is_purchase) as all_purchase
+FROM baza;
+
+--inaczej obiliczone to samo
+SELECT COUNT(*) as all_purchase
+FROM purchase;
+SELECT COUNT(*) as all_try_home
+FROM home_try_on;
+SELECT COUNT(*) as all_id
+FROM quiz;
+
+--rozdzielenie na 3 i 5 par, najpierw ile jest jakich
+
+SELECT COUNT(*) as '3pairs'
+FROM home_try_on
+WHERE number_of_pairs = '3 pairs';
+SELECT COUNT(*) as '5pairs'
+FROM home_try_on
+WHERE number_of_pairs = '5 pairs';
+
+--jaki wpyw ma testowanie 3 lub 5 par na sprzedaz
+
+WITH baza AS
+(SELECT DISTINCT q.user_id,
+   h.user_id IS NOT NULL AS 'is_home_try_on',
+   h.number_of_pairs,
+   p.user_id IS NOT NULL AS 'is_purchase'
+FROM quiz q
+LEFT JOIN home_try_on h
+   ON q.user_id = h.user_id
+LEFT JOIN purchase p
+   ON p.user_id = q.user_id)
+   
+SELECT sum(is_home_try_on) all_3, sum(is_purchase) as purchase_3
+FROM baza
+WHERE baza.number_of_pairs = '3 pairs';
+
+WITH baza AS
+(SELECT DISTINCT q.user_id,
+   h.user_id IS NOT NULL AS 'is_home_try_on',
+   h.number_of_pairs,
+   p.user_id IS NOT NULL AS 'is_purchase'
+FROM quiz q
+LEFT JOIN home_try_on h
+   ON q.user_id = h.user_id
+LEFT JOIN purchase p
+   ON p.user_id = q.user_id)
+   
+SELECT sum(is_home_try_on) as all_5, sum(is_purchase) as purchase_5
+FROM baza
+WHERE baza.number_of_pairs = '5 pairs';
+
+--The most common results of the style quiz.
+SELECT style, COUNT(*) AS q_style
+FROM quiz
+group by style
+order by q_style desc;
+
+--The most common types of purchase made.
+SELECT style, COUNT(*) AS q_style_p
+FROM purchase
+group by style
+order by q_style_p desc;
+
+
+
+--The most common model of purchase made.
+SELECT model_name, COUNT(*) AS q_model_p
+FROM purchase
+group by model_name
+order by q_model_p desc;
+
+--The most common price of purchase made.
+SELECT price, COUNT(*) AS q_price_p
+FROM purchase
+group by price
+order by q_price_p desc;
+
+
+
+--sprawdzi najczeciej wybierane sposrod 3 i 5 czy to sa inne
+SELECT purchase.model_name, count(purchase.user_id) as q_model5
+FROM 
+purchase join home_try_on
+on purchase.user_id = home_try_on.user_id
+WHERE home_try_on.number_of_pairs = '5 pairs'
+group by purchase.model_name
+order by q_model5 desc;
+
+SELECT purchase.model_name, count(purchase.user_id) as q_model3
+FROM 
+purchase join home_try_on
+on purchase.user_id = home_try_on.user_id
+WHERE home_try_on.number_of_pairs = '3 pairs'
+group by purchase.model_name
+order by q_model3 desc;
+
